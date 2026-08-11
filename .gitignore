@@ -1,0 +1,10 @@
+# layer/nodejs/node_modules は Lambda Layer の必須構造なのでコミット対象にする。
+# そのため node_modules は個別に指定する。
+cdk/node_modules/
+cdk.out/
+cdk/bin/*.js
+cdk/bin/*.d.ts
+cdk/lib/*.js
+cdk/lib/*.d.ts
+*.log
+.DS_Store

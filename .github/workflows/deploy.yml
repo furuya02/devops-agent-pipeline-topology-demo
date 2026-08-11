@@ -1,0 +1,64 @@
+name: deploy
+
+# dev にデプロイしてから prod に昇格する構成にしている。
+# Understanding Pipeline Topology が「steps, environment promotions, and deployments」を
+# どう認識するかを確認するための最小のパイプライン。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  deploy-dev:
+    name: Deploy to dev
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cdk/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: cdk
+      - run: pnpm exec cdk deploy -c env=dev --require-approval never
+        working-directory: cdk
+
+  deploy-prod:
+    name: Deploy to prod
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cdk/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: cdk
+      - run: pnpm exec cdk deploy -c env=prod --require-approval never
+        working-directory: cdk

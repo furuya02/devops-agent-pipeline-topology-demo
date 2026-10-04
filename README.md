@@ -199,6 +199,21 @@ Keeping the Agent Space incurs no fixed cost, but delete it from the DevOps Agen
 - A repository secret named `AWS_DEPLOY_ROLE_ARN`
 - Repository environments named `dev` and `prod`
 
+`scripts/github-oidc-role.yaml` creates the role. Repositories with the immutable subject enabled send `sub` as `repo:<owner>@<ownerId>/<repo>@<repoId>:...`, so the template takes both numeric IDs.
+
+```bash
+OWNER_ID=$(gh api users/<owner> --jq .id)
+REPO_ID=$(gh api repos/<owner>/devops-agent-pipeline-topology-demo --jq .id)
+
+aws cloudformation deploy \
+  --template-file scripts/github-oidc-role.yaml \
+  --stack-name devops-agent-pipeline-topology-demo-github-oidc \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides GitHubOrg=<owner> GitHubOwnerId=${OWNER_ID} RepositoryId=${REPO_ID} CreateOIDCProvider=true
+```
+
+Set `CreateOIDCProvider=false` if the account already has the `token.actions.githubusercontent.com` provider.
+
 ## Directory layout
 
 ```

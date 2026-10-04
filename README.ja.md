@@ -197,6 +197,21 @@ Agent Space は維持しても固定費は発生しませんが、不要であ�
 - リポジトリの Secrets に `AWS_DEPLOY_ROLE_ARN` を登録する
 - リポジトリの Environments に `dev` と `prod` を作成する
 
+ロールは `scripts/github-oidc-role.yaml` で作成します。immutable subject が有効なリポジトリでは `sub` が `repo:<owner>@<ownerId>/<repo>@<repoId>:...` になるため、テンプレートには数値 ID を2つ渡します。
+
+```bash
+OWNER_ID=$(gh api users/<owner> --jq .id)
+REPO_ID=$(gh api repos/<owner>/devops-agent-pipeline-topology-demo --jq .id)
+
+aws cloudformation deploy \
+  --template-file scripts/github-oidc-role.yaml \
+  --stack-name devops-agent-pipeline-topology-demo-github-oidc \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides GitHubOrg=<owner> GitHubOwnerId=${OWNER_ID} RepositoryId=${REPO_ID} CreateOIDCProvider=true
+```
+
+アカウントに `token.actions.githubusercontent.com` のプロバイダーが既にある場合は `CreateOIDCProvider=false` にします。
+
 ## ディレクトリ構成
 
 ```

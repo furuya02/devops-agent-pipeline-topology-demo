@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: GitHub Actions から CDK デプロイするための OIDC ロール（devops-agent-pipeline-topology-demo 用）
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Default: furuya02
+    Description: GitHub のオーナー名
+  RepositoryName:
+    Type: String
+    Default: devops-agent-pipeline-topology-demo
+    Description: リポジトリ名
+  CreateOIDCProvider:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: アカウントに GitHub の OIDC プロバイダーが未作成なら true、作成済みなら false
+
+Conditions:
+  ShouldCreateOIDCProvider: !Equals [!Ref CreateOIDCProvider, 'true']
+
+Resources:
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  # CDK のブートストラップで作られるロールを引き受けるだけの権限にしている。
+  # デプロイ本体の権限は CDK 側のロールが持つため、このロールに広い権限は不要。
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: devops-agent-pipeline-topology-demo-github-deploy
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
+      Policies:
+        - PolicyName: assume-cdk-bootstrap-roles
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/cdk-*
+
+Outputs:
+  RoleArn:
+    Description: GitHub の Secrets に AWS_DEPLOY_ROLE_ARN として登録する値
+    Value: !GetAtt DeployRole.Arn

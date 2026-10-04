@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # デモ環境にリクエストを流し、ログ・トレース・メトリクスを発生させる。
-# Learned Skills が学習する材料を作るために実行する。
+# DevOps Agent が参照するログ・トレースを作るために実行する。
 #
 # 使い方: ./scripts/invoke-demo.sh <エンドポイントURL> [回数]
 set -euo pipefail

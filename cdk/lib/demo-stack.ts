@@ -9,7 +9,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-const PROJECT = 'devops-agent-learned-skills-demo';
+const PROJECT = 'devops-agent-pipeline-topology-demo';
 
 export interface DemoStackProps extends cdk.StackProps {
   readonly envName: string;

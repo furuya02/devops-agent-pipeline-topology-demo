@@ -1,14 +1,14 @@
-# devops-agent-learned-skills-demo
+# devops-agent-pipeline-topology-demo
 
-AWS DevOps Agent の Learned Skills（学習済みスキル）が、実際にどのような内容を生成するかを確認するための最小デモ環境です。
+AWS DevOps Agent のマネージドメモリ **Understanding Pipeline Topology**（`understanding-pipeline-topology`）と **Understanding Code Dependencies**（`understanding-dependencies`）が、何を接続すれば生成されるかを確認するための最小デモ環境です。
 
-特に、GA 後に追加された **Understanding Code Dependencies** と **Understanding Pipeline Topology** の生成結果を確認することを目的としています。
+公式ドキュメントには、この2つの生成条件が記載されていません。このデモを使い、Agent Space への接続を段階的に増やしながら生成の有無を確認します。
 
 ## このデモが用意しているもの
 
-Learned Skills が検出する対象を、意図的に一通り揃えた構成になっています。
+依存関係とパイプラインの両方を、意図的に一通り揃えた構成になっています。
 
-| Learned Skills が見る対象 | このデモでの実装 |
+| 確認したい対象 | このデモでの実装 |
 |---|---|
 | サービス間の同期呼び出し | `order-api` が `inventory` を Lambda 直接呼び出し |
 | サービス間の非同期イベント | `order-api` → SQS → `notification` |
@@ -49,8 +49,8 @@ Learned Skills が検出する対象を、意図的に一通り揃えた構成�
 ### (1) リポジトリの取得
 
 ```bash
-git clone https://github.com/furuya02/devops-agent-learned-skills-demo.git
-cd devops-agent-learned-skills-demo
+git clone https://github.com/furuya02/devops-agent-pipeline-topology-demo.git
+cd devops-agent-pipeline-topology-demo
 ```
 
 ### (2) 依存関係のインストール
@@ -84,9 +84,9 @@ pnpm exec cdk deploy -c env=prod
 
 ```
 Outputs:
-DevopsAgentLearnedSkillsDemo-dev.OrdersEndpoint = https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/dev/orders
-DevopsAgentLearnedSkillsDemo-dev.OrdersTableName = devops-agent-learned-skills-demo-dev-orders
-DevopsAgentLearnedSkillsDemo-dev.OrderEventsQueueUrl = https://sqs.ap-northeast-1.amazonaws.com/<account-id>/devops-agent-learned-skills-demo-dev-order-events
+DevopsAgentPipelineTopologyDemo-dev.OrdersEndpoint = https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/dev/orders
+DevopsAgentPipelineTopologyDemo-dev.OrdersTableName = devops-agent-pipeline-topology-demo-dev-orders
+DevopsAgentPipelineTopologyDemo-dev.OrderEventsQueueUrl = https://sqs.ap-northeast-1.amazonaws.com/<account-id>/devops-agent-pipeline-topology-demo-dev-order-events
 ```
 
 `OrdersEndpoint` は次の動作確認で使用します。
@@ -121,13 +121,13 @@ SQS 経由で `notification` が処理し、DynamoDB に記録されます。
 
 ```bash
 aws dynamodb scan \
-  --table-name devops-agent-learned-skills-demo-dev-orders \
+  --table-name devops-agent-pipeline-topology-demo-dev-orders \
   --query 'Items[].{orderId:orderId.S,sku:sku.S,notifiedAt:notifiedAt.S}'
 ```
 
-### (3) 学習用のトラフィックを流す
+### (3) トラフィックを流す
 
-Learned Skills はログ・トレース・調査の履歴から学習するため、ある程度のトラフィックを流しておきます。
+DevOps Agent が参照するログ・トレース・メトリクスを発生させるため、ある程度のトラフィックを流しておきます。
 
 ```bash
 ./scripts/invoke-demo.sh "<OrdersEndpoint>" 20
@@ -142,14 +142,15 @@ Learned Skills はログ・トレース・調査の履歴から学習するた�
 3. このリポジトリを GitHub 連携で接続します
 4. GitHub Actions のパイプラインを接続します
 5. Topology ページで環境が表示されることを確認します
-6. Knowledge ページの Skills タブで Learned Skills の生成状況を確認します
+6. Knowledge ページの Memories タブで、`understanding-dependencies` / `understanding-pipeline-topology` のメモリが生成されているかを確認します
+7. Topology ページの Show メニューで、Pipeline ビューが選べるかを確認します（pipeline topology が生成された場合のみ表示されます）
 
-Learned Skills の更新タイミングは以下のとおりです（[公式ドキュメント](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-learned-skills.html)）。
+メモリの更新タイミングは以下のとおりです（[公式ドキュメント](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-devops-agent-memories.html)）。
 
-- Agent Space Understanding: Agent Space の capability や統合を追加・更新・削除したときに実行。アクティブな Agent Space では3日ごとに定期更新（過去6日間に調査が1件もない場合は自動停止）
-- Tool Use Best Practices: 30調査ごと
+- Agent Space Understanding: 接続したコードリポジトリ・デプロイパイプライン・オブザーバビリティ統合が変わったときに再生成。アクティブな Agent Space では最短3日ごとに定期更新（過去6日間に調査が1件もない場合は自動停止）
+- Pipeline Topology / Code Dependencies: 生成条件・更新タイミングは公式ドキュメントに記載なし
 
-すぐに確認したい場合は、Topology ページの **Regenerate** ボタン、またはチャットで再生成を依頼します。
+すぐに確認したい場合は、Topology ページの **Regenerate** ボタン、またはチャットで更新を依頼します。Topology ページの **Download** メニューから、表示中のビューを PNG / JSON / Mermaid で書き出せます。
 
 ## コストについて
 

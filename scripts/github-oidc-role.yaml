@@ -10,6 +10,12 @@ Parameters:
     Type: String
     Default: devops-agent-pipeline-topology-demo
     Description: リポジトリ名
+  GitHubOwnerId:
+    Type: String
+    Description: オーナーの数値 ID（gh api users/<owner> --jq .id）
+  RepositoryId:
+    Type: String
+    Description: リポジトリの数値 ID（gh api repos/<owner>/<repo> --jq .id）
   CreateOIDCProvider:
     Type: String
     AllowedValues: ['true', 'false']
@@ -46,8 +52,12 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              # immutable subject が有効なリポジトリでは sub が
+              # repo:<owner>@<ownerId>/<repo>@<repoId>:... になるため、両方の形式を許可する。
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrg}/${RepositoryName}:*
+                  - !Sub repo:${GitHubOrg}@${GitHubOwnerId}/${RepositoryName}@${RepositoryId}:*
       Policies:
         - PolicyName: assume-cdk-bootstrap-roles
           PolicyDocument:

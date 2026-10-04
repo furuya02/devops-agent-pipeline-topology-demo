@@ -1,5 +1,5 @@
 {
-  "name": "devops-agent-learned-skills-demo-cdk",
+  "name": "devops-agent-pipeline-topology-demo-cdk",
   "version": "0.1.0",
   "private": true,
   "bin": {

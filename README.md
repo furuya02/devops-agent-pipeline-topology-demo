@@ -1,14 +1,16 @@
-# devops-agent-learned-skills-demo
+# devops-agent-pipeline-topology-demo
 
-A minimal demo environment for inspecting what the AWS DevOps Agent Learned Skills actually generate.
+A minimal demo environment for finding out what you need to connect before AWS DevOps Agent generates its managed memories **Understanding Pipeline Topology** (`understanding-pipeline-topology`) and **Understanding Code Dependencies** (`understanding-dependencies`).
+
+The official documentation does not state when these two are generated. This demo is used to add connections to an Agent Space step by step and check whether each one appears.
 
 It focuses on the two skills added after GA: **Understanding Code Dependencies** and **Understanding Pipeline Topology**.
 
 ## What this demo provides
 
-The stack deliberately covers every kind of relationship the Learned Skills look at.
+The stack deliberately covers both code dependencies and a deployment pipeline.
 
-| What Learned Skills look at | Implementation in this demo |
+| What we want to observe | Implementation in this demo |
 |---|---|
 | Synchronous service-to-service calls | `order-api` invokes `inventory` directly via Lambda |
 | Asynchronous events between services | `order-api` → SQS → `notification` |
@@ -49,8 +51,8 @@ Environments: dev and prod, deployed from the same stack definition
 ### (1) Clone the repository
 
 ```bash
-git clone https://github.com/furuya02/devops-agent-learned-skills-demo.git
-cd devops-agent-learned-skills-demo
+git clone https://github.com/furuya02/devops-agent-pipeline-topology-demo.git
+cd devops-agent-pipeline-topology-demo
 ```
 
 ### (2) Install dependencies
@@ -84,9 +86,9 @@ The deployment prints the following outputs.
 
 ```
 Outputs:
-DevopsAgentLearnedSkillsDemo-dev.OrdersEndpoint = https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/dev/orders
-DevopsAgentLearnedSkillsDemo-dev.OrdersTableName = devops-agent-learned-skills-demo-dev-orders
-DevopsAgentLearnedSkillsDemo-dev.OrderEventsQueueUrl = https://sqs.ap-northeast-1.amazonaws.com/<account-id>/devops-agent-learned-skills-demo-dev-order-events
+DevopsAgentPipelineTopologyDemo-dev.OrdersEndpoint = https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/dev/orders
+DevopsAgentPipelineTopologyDemo-dev.OrdersTableName = devops-agent-pipeline-topology-demo-dev-orders
+DevopsAgentPipelineTopologyDemo-dev.OrderEventsQueueUrl = https://sqs.ap-northeast-1.amazonaws.com/<account-id>/devops-agent-pipeline-topology-demo-dev-order-events
 ```
 
 `OrdersEndpoint` is used in the verification steps below.
@@ -121,13 +123,13 @@ curl -X POST "<OrdersEndpoint>" \
 
 ```bash
 aws dynamodb scan \
-  --table-name devops-agent-learned-skills-demo-dev-orders \
+  --table-name devops-agent-pipeline-topology-demo-dev-orders \
   --query 'Items[].{orderId:orderId.S,sku:sku.S,notifiedAt:notifiedAt.S}'
 ```
 
-### (3) Generate traffic for learning
+### (3) Generate traffic
 
-Learned Skills are built from logs, traces, and past investigations, so generate some traffic first.
+Generate some traffic so that DevOps Agent has logs, traces, and metrics to work with.
 
 ```bash
 ./scripts/invoke-demo.sh "<OrdersEndpoint>" 20
@@ -142,14 +144,15 @@ Every fifth request hits the out-of-stock path, so both success and failure case
 3. Connect this repository through the GitHub integration
 4. Connect the GitHub Actions pipeline
 5. Confirm the environment appears on the Topology page
-6. Check the Skills tab on the Knowledge page for Learned Skills status
+6. On the Memories tab of the Knowledge page, check whether `understanding-dependencies` / `understanding-pipeline-topology` memories have been generated
+7. On the Topology page, check whether the Pipeline view is available in the Show menu (it appears only after pipeline topology has been generated)
 
-Update timing, per the [official documentation](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-learned-skills.html):
+Update timing, per the [official documentation](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-devops-agent-memories.html):
 
-- Agent Space Understanding: runs whenever you add, update, or remove an Agent Space capability or integration, and refreshes every 3 days for active Agent Spaces (refresh pauses if there are no investigations for 6 days)
-- Tool Use Best Practices: every 30 investigations
+- Agent Space Understanding: regenerated when connected code repositories, deployment pipelines, or observability integrations change, and refreshed at most once every 3 days for active Agent Spaces (refresh pauses if there are no investigations for 6 days)
+- Pipeline Topology / Code Dependencies: generation conditions and timing are not documented
 
-To see results sooner, use the **Regenerate** button on the Topology page, or ask the agent in chat.
+To see results sooner, use the **Regenerate** button on the Topology page, or ask the agent in chat. The **Download** menu on the Topology page exports the current view as PNG / JSON / Mermaid.
 
 ## Cost
 
